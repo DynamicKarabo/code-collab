@@ -1,0 +1,5 @@
+{
+  "name": "CodeCollab AI",
+  "description": "A collaborative, real-time IDE prototype featuring AI pair programming powered by Gemini. Includes syntax highlighting, file management, and simulated multi-user cursors.",
+  "requestFramePermissions": []
+}

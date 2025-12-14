@@ -1,0 +1,14 @@
+import { createClient } from '@supabase/supabase-js';
+
+// Fallback values prevent the app from crashing immediately if env vars are missing.
+// The Auth component checks isSupabaseConfigured() before attempting to use the client.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+export const isSupabaseConfigured = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  return url && key && url.length > 0 && key.length > 0;
+};

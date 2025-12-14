@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
-import { File as FileIcon, Settings, Share2, MessageSquare, Play, Menu, ArrowLeft } from 'lucide-react';
+import { File as FileIcon, Settings, Share2, MessageSquare, Play, Menu, ArrowLeft, Plus, Trash2, Undo, Redo, Code, Check, X } from 'lucide-react';
 import { INITIAL_FILES, MOCK_USERS } from '../constants';
 import { File, User } from '../types';
 import { ChatPanel } from './ChatPanel';
@@ -20,6 +20,13 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   const [chatOpen, setChatOpen] = useState(false);
   const [users] = useState<User[]>([{ ...currentUser, color: '#3b82f6', name: `${currentUser.email?.split('@')[0]} (You)` }, ...MOCK_USERS]);
   
+  // File Creation State
+  const [isCreatingFile, setIsCreatingFile] = useState(false);
+  const [newFileName, setNewFileName] = useState('');
+
+  // Editor Reference
+  const editorRef = useRef<any>(null);
+  
   const activeFile = files.find(f => f.id === activeFileId) || files[0];
 
   const handleEditorChange = (value: string | undefined) => {
@@ -30,6 +37,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   };
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
+    editorRef.current = editor;
     monaco.editor.defineTheme('vercel-dark', {
       base: 'vs-dark',
       inherit: true,
@@ -44,6 +52,56 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
     monaco.editor.setTheme('vercel-dark');
   };
 
+  const handleCreateFile = () => {
+    if (!newFileName.trim()) return;
+    const extension = newFileName.split('.').pop() || 'txt';
+    const languageMap: Record<string, string> = {
+        ts: 'typescript',
+        tsx: 'typescript',
+        js: 'javascript',
+        jsx: 'javascript',
+        css: 'css',
+        html: 'html',
+        json: 'json'
+    };
+    
+    const newFile: File = {
+        id: Date.now().toString(),
+        name: newFileName,
+        language: languageMap[extension] || 'plaintext',
+        content: '// New file\n'
+    };
+
+    setFiles([...files, newFile]);
+    setActiveFileId(newFile.id);
+    setIsCreatingFile(false);
+    setNewFileName('');
+  };
+
+  const handleDeleteFile = (e: React.MouseEvent, fileId: string) => {
+    e.stopPropagation();
+    if (files.length <= 1) {
+        alert("Cannot delete the last file.");
+        return;
+    }
+    const confirmed = window.confirm("Are you sure you want to delete this file?");
+    if (confirmed) {
+        const newFiles = files.filter(f => f.id !== fileId);
+        setFiles(newFiles);
+        if (activeFileId === fileId) {
+            setActiveFileId(newFiles[0].id);
+        }
+    }
+  };
+
+  const triggerUndo = () => {
+    editorRef.current?.trigger('toolbar', 'undo', null);
+  };
+
+  const triggerRedo = () => {
+    editorRef.current?.trigger('toolbar', 'redo', null);
+  };
+
   return (
     <div className="flex h-screen w-screen bg-black text-white overflow-hidden relative">
       <CursorOverlay users={users} />
@@ -55,37 +113,75 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
                 <ArrowLeft size={16} />
             </button>
             <Logo className="w-5 h-5" />
-            <span className="font-bold text-sm tracking-tight">{roomId}</span>
+            <span className="font-bold text-sm tracking-tight truncate">{roomId}</span>
         </div>
         
-        <div className="p-2 flex-1">
+        <div className="p-2 flex-1 overflow-y-auto">
           <div className="flex items-center justify-between text-[10px] font-bold text-secondary uppercase tracking-wider mb-2 px-2 mt-4">
-            <span>Files</span>
+            <span>Explorer</span>
+            <button 
+                onClick={() => setIsCreatingFile(true)}
+                className="hover:text-white transition-colors"
+                title="New File"
+            >
+                <Plus size={14} />
+            </button>
           </div>
+          
           <div className="space-y-0.5">
             {files.map(file => (
-              <button
+              <div
                 key={file.id}
                 onClick={() => setActiveFileId(file.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                className={`group w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors cursor-pointer ${
                   activeFileId === file.id 
                     ? 'bg-white/10 text-white' 
                     : 'text-secondary hover:bg-[#111] hover:text-white'
                 }`}
               >
-                <FileIcon size={14} />
-                {file.name}
-              </button>
+                <div className="flex items-center gap-2 truncate">
+                    <FileIcon size={14} className={activeFileId === file.id ? 'text-blue-400' : 'text-gray-500'} />
+                    <span className="truncate">{file.name}</span>
+                </div>
+                <button 
+                    onClick={(e) => handleDeleteFile(e, file.id)}
+                    className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity p-1"
+                >
+                    <Trash2 size={12} />
+                </button>
+              </div>
             ))}
+
+            {isCreatingFile && (
+                <div className="px-3 py-2 bg-[#111] rounded-md flex items-center gap-2">
+                    <FileIcon size={14} className="text-gray-500" />
+                    <input 
+                        autoFocus
+                        type="text" 
+                        value={newFileName}
+                        onChange={(e) => setNewFileName(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleCreateFile();
+                            if (e.key === 'Escape') setIsCreatingFile(false);
+                        }}
+                        placeholder="filename.ts"
+                        className="bg-transparent border-none outline-none text-sm text-white w-full placeholder-gray-600"
+                    />
+                    <div className="flex items-center gap-1">
+                        <button onClick={handleCreateFile} className="text-green-500 hover:text-green-400"><Check size={12}/></button>
+                        <button onClick={() => setIsCreatingFile(false)} className="text-red-500 hover:text-red-400"><X size={12}/></button>
+                    </div>
+                </div>
+            )}
           </div>
 
-          <div className="mt-8">
+          <div className="mt-8 border-t border-[#333] pt-4">
             <div className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-2 px-2">Collaborators</div>
             <div className="space-y-2 px-2">
                 {users.map(user => (
                 <div key={user.id} className="flex items-center gap-2">
                     <div 
-                    className="w-2 h-2 rounded-full"
+                    className="w-2 h-2 rounded-full ring-2 ring-black"
                     style={{ backgroundColor: user.color }}
                     />
                     <span className="text-xs text-secondary">{user.name}</span>
@@ -101,12 +197,24 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
         {/* Top Navigation */}
         <div className="h-12 bg-black border-b border-[#333] flex items-center justify-between px-4">
           <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-secondary hover:text-white">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-secondary hover:text-white transition-colors">
                <Menu size={18} />
             </button>
-            <span className="text-sm text-secondary flex items-center gap-2">
-              {activeFile.name}
-            </span>
+            <div className="flex items-center gap-3">
+                 <span className="text-sm text-gray-300 font-medium flex items-center gap-2">
+                 {activeFile.name}
+                </span>
+                {/* Undo / Redo Controls */}
+                <div className="h-4 w-[1px] bg-[#333] mx-1"></div>
+                <div className="flex items-center gap-1">
+                    <button onClick={triggerUndo} className="p-1.5 text-secondary hover:text-white hover:bg-[#222] rounded transition-colors" title="Undo (Ctrl+Z)">
+                        <Undo size={14} />
+                    </button>
+                    <button onClick={triggerRedo} className="p-1.5 text-secondary hover:text-white hover:bg-[#222] rounded transition-colors" title="Redo (Ctrl+Y)">
+                        <Redo size={14} />
+                    </button>
+                </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -121,7 +229,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
             </button>
             <button 
               onClick={() => setChatOpen(!chatOpen)}
-              className={`p-2 rounded transition-colors ${chatOpen ? 'bg-white text-black' : 'text-secondary hover:text-white hover:bg-[#222]'}`}
+              className={`p-2 rounded transition-colors relative ${chatOpen ? 'bg-white text-black' : 'text-secondary hover:text-white hover:bg-[#222]'}`}
             >
               <MessageSquare size={16} />
             </button>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User as UserIcon, Loader2, X } from 'lucide-react';
+import { Send, Bot, User as UserIcon, Loader2, X, Sparkles, Zap } from 'lucide-react';
 import { ChatMessage, File } from '../types';
 import { streamCodeAssistant } from '../services/geminiService';
 
@@ -20,6 +20,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isThinkingMode, setIsThinkingMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -56,10 +57,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
     }]);
 
     try {
-      const stream = streamCodeAssistant(userMsg.content, {
-        currentFile: activeFile.name,
-        fileContent: activeFile.content
-      });
+      const stream = streamCodeAssistant(
+        userMsg.content, 
+        {
+          currentFile: activeFile.name,
+          fileContent: activeFile.content
+        },
+        isThinkingMode
+      );
 
       let fullText = '';
       
@@ -90,16 +95,32 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
   if (!isOpen) return null;
 
   return (
-    <div className="w-96 border-l border-slate-700 bg-slate-900 flex flex-col h-full absolute right-0 top-0 z-20 shadow-xl">
+    <div className="w-96 border-l border-[#333] bg-[#0a0a0a] flex flex-col h-full absolute right-0 top-0 z-20 shadow-2xl animate-fade-in">
       {/* Header */}
-      <div className="h-12 border-b border-slate-700 flex items-center justify-between px-4 bg-slate-800">
-        <div className="flex items-center gap-2 text-blue-400 font-semibold">
-          <Bot size={18} />
+      <div className="h-12 border-b border-[#333] flex items-center justify-between px-4 bg-[#111]">
+        <div className="flex items-center gap-2 text-white font-medium">
+          <Bot size={18} className="text-blue-500" />
           <span>AI Assistant</span>
         </div>
-        <button onClick={onClose} className="text-slate-400 hover:text-white">
-          <X size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Thinking Mode Toggle */}
+          <button
+            onClick={() => setIsThinkingMode(!isThinkingMode)}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
+              isThinkingMode 
+                ? 'bg-purple-500/10 border-purple-500 text-purple-400' 
+                : 'bg-[#222] border-[#333] text-gray-500 hover:text-gray-300'
+            }`}
+            title={isThinkingMode ? "Deep Reasoning (Gemini 3 Pro)" : "Fast Response (Flash Lite)"}
+          >
+            {isThinkingMode ? <Sparkles size={10} /> : <Zap size={10} />}
+            {isThinkingMode ? 'Thinking' : 'Fast'}
+          </button>
+          
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors ml-2">
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
@@ -107,16 +128,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-              msg.role === 'ai' ? 'bg-blue-600' : msg.role === 'system' ? 'bg-red-500' : 'bg-slate-600'
+              msg.role === 'ai' ? 'bg-blue-600' : msg.role === 'system' ? 'bg-red-500' : 'bg-gray-700'
             }`}>
               {msg.role === 'ai' ? <Bot size={16} /> : <UserIcon size={16} />}
             </div>
             <div className={`flex-1 p-3 rounded-lg text-sm leading-relaxed ${
               msg.role === 'user' 
                 ? 'bg-blue-600/20 border border-blue-500/30 text-blue-50' 
-                : 'bg-slate-800 border border-slate-700 text-slate-300'
+                : 'bg-[#1a1a1a] border border-[#333] text-gray-300'
             }`}>
-               {/* Extremely simple markdown-like rendering for this prototype */}
                <div className="whitespace-pre-wrap font-mono text-xs md:text-sm">
                   {msg.content}
                </div>
@@ -128,24 +148,27 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-slate-700 bg-slate-800">
+      <div className="p-4 border-t border-[#333] bg-[#0a0a0a]">
         <form onSubmit={handleSubmit} className="relative">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your code..."
-            className="w-full bg-slate-900 text-slate-200 rounded-md py-3 pl-4 pr-12 text-sm border border-slate-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+            placeholder={isThinkingMode ? "Ask a complex question..." : "Ask a quick question..."}
+            className="w-full bg-[#111] text-gray-200 rounded-md py-3 pl-4 pr-12 text-sm border border-[#333] focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all placeholder-gray-600"
             disabled={isTyping}
           />
           <button 
             type="submit"
             disabled={!input.trim() || isTyping}
-            className="absolute right-2 top-2 p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-md disabled:opacity-50 transition-colors"
+            className="absolute right-2 top-2 p-1.5 text-white hover:bg-white/10 rounded-md disabled:opacity-50 transition-colors"
           >
-            {isTyping ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            {isTyping ? <Loader2 size={18} className="animate-spin text-gray-400" /> : <Send size={18} />}
           </button>
         </form>
+        <div className="text-[10px] text-gray-600 mt-2 text-center">
+          {isThinkingMode ? "Using Gemini 3.0 Pro (High Intelligence)" : "Using Gemini Flash-Lite (Low Latency)"}
+        </div>
       </div>
     </div>
   );

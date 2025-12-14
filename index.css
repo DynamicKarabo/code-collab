@@ -1,0 +1,20 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #0a0a0a;
+  color: #ededed;
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}

@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 // Initialize the API client
-const apiKey = process.env.API_KEY || ''; 
+const apiKey = import.meta.env.VITE_GOOGLE_API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
 interface ChatContext {
@@ -41,7 +41,7 @@ export const streamCodeAssistant = async function* (
     // Fast mode: gemini-2.5-flash-lite for low latency
     // Thinking mode: gemini-3-pro-preview for complex reasoning
     const modelName = useThinkingMode ? 'gemini-3-pro-preview' : 'gemini-2.5-flash-lite';
-    
+
     const config: any = {
       systemInstruction,
       temperature: 0.7,

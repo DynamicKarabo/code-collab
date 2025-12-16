@@ -5,14 +5,24 @@ import { Dashboard } from './components/Dashboard';
 import { EditorWorkspace } from './components/EditorWorkspace';
 import { ViewMode, User } from './types';
 
+import { InviteModal } from './components/InviteModal';
+
 const App = () => {
   const [session, setSession] = useState<any>(null);
   const [view, setView] = useState<ViewMode>(ViewMode.AUTH);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isConfigured, setIsConfigured] = useState(true);
+  const [pendingInviteRoomId, setPendingInviteRoomId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check URL for room invite
+    const params = new URLSearchParams(window.location.search);
+    const inviteId = params.get('roomId');
+    if (inviteId) {
+      setPendingInviteRoomId(inviteId);
+    }
+
     // Check configuration first
     if (!isSupabaseConfigured()) {
       setIsConfigured(false);
@@ -23,7 +33,6 @@ const App = () => {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      // Only set to dashboard if we are currently in AUTH mode waiting for a session
       setView(prev => prev === ViewMode.AUTH && session ? ViewMode.DASHBOARD : prev);
       setLoading(false);
     }).catch(err => {
@@ -36,7 +45,6 @@ const App = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
 
-      // Better state transition logic
       if (session) {
         setView(prev => prev === ViewMode.AUTH ? ViewMode.DASHBOARD : prev);
       } else {
@@ -61,11 +69,27 @@ const App = () => {
   const handleJoinRoom = (roomId: string) => {
     setCurrentRoomId(roomId);
     setView(ViewMode.EDITOR);
+    // Update URL without reloading
+    window.history.pushState({}, '', `/?roomId=${roomId}`);
   };
 
   const handleLeaveRoom = () => {
     setCurrentRoomId(null);
     setView(ViewMode.DASHBOARD);
+    // Reset URL
+    window.history.pushState({}, '', '/');
+  };
+
+  const handleAcceptInvite = () => {
+    if (pendingInviteRoomId) {
+      handleJoinRoom(pendingInviteRoomId);
+      setPendingInviteRoomId(null);
+    }
+  };
+
+  const handleDeclineInvite = () => {
+    setPendingInviteRoomId(null);
+    window.history.pushState({}, '', '/');
   };
 
   if (loading) {
@@ -73,6 +97,7 @@ const App = () => {
   }
 
   if (!isConfigured) {
+    // ... (This block unchanged, omitted for brevity if simple generic replacement but doing full file for safety)
     return (
       <div className="h-screen w-screen bg-black flex items-center justify-center text-white p-4">
         <div className="max-w-md text-center">
@@ -97,37 +122,43 @@ const App = () => {
     return <Auth onLogin={handleLogin} />;
   }
 
-  if (view === ViewMode.DASHBOARD) {
-    return (
-      <Dashboard
-        user={{
-          id: session.user.id,
-          name: session.user.email || 'User',
-          email: session.user.email,
-          color: '#3b82f6'
-        }}
-        onJoinRoom={handleJoinRoom}
-        onLogout={handleLogout}
-      />
-    );
-  }
+  return (
+    <>
+      {pendingInviteRoomId && view === ViewMode.DASHBOARD && (
+        <InviteModal
+          roomId={pendingInviteRoomId}
+          onAccept={handleAcceptInvite}
+          onDecline={handleDeclineInvite}
+        />
+      )}
 
-  if (view === ViewMode.EDITOR && currentRoomId) {
-    return (
-      <EditorWorkspace
-        roomId={currentRoomId}
-        currentUser={{
-          id: session.user.id,
-          name: session.user.email || 'User',
-          email: session.user.email,
-          color: '#3b82f6'
-        }}
-        onLeave={handleLeaveRoom}
-      />
-    );
-  }
+      {view === ViewMode.DASHBOARD && (
+        <Dashboard
+          user={{
+            id: session.user.id,
+            name: session.user.email || 'User',
+            email: session.user.email,
+            color: '#3b82f6'
+          }}
+          onJoinRoom={handleJoinRoom}
+          onLogout={handleLogout}
+        />
+      )}
 
-  return <div>Error: Unknown State</div>;
+      {view === ViewMode.EDITOR && currentRoomId && (
+        <EditorWorkspace
+          roomId={currentRoomId}
+          currentUser={{
+            id: session.user.id,
+            name: session.user.email || 'User',
+            email: session.user.email,
+            color: '#3b82f6'
+          }}
+          onLeave={handleLeaveRoom}
+        />
+      )}
+    </>
+  );
 };
 
 export default App;

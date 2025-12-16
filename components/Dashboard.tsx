@@ -4,6 +4,7 @@ import { db } from '../services/db';
 import { githubService } from '../services/github.ts';
 import { Room, User } from '../types';
 import { Logo } from './Logo';
+import { ThemeSwitcher } from './ThemeSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
 import randomColor from 'randomcolor';
 

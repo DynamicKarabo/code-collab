@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import Editor, { OnMount } from '@monaco-editor/react';
+import Editor, { OnMount, useMonaco } from '@monaco-editor/react';
+import { useTheme } from '../contexts/ThemeContext';
 import { File as FileIcon, Settings, Share2, MessageSquare, Play, Menu, ArrowLeft, Plus, Trash2, Undo, Redo, Code, Check, X, Loader2 } from 'lucide-react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -14,6 +15,8 @@ import { ChatPanel } from './ChatPanel';
 import { TerminalPanel, EditorMarker } from './TerminalPanel';
 import { CursorOverlay } from './CursorOverlay';
 import { Logo } from './Logo';
+import { ThemeSwitcher } from './ThemeSwitcher';
+import { FileExplorer } from './FileExplorer';
 
 interface EditorWorkspaceProps {
   roomId: string;
@@ -201,8 +204,27 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
     db.saveFile({ ...activeFile, content: value }, roomId);
   };
 
+  const { theme } = useTheme();
+
+  // Update Monaco Theme when app theme changes
+  useEffect(() => {
+    if (!editor) return;
+
+    // We need access to 'monaco' instance. 
+    // Since we don't store 'monaco' in state (only editor instance), we might need to use the loader or just reliance on global 'monaco' if available, 
+    // or better, store monaco in state or use the onMount properly.
+    // Actually, 'monaco' is available via useMonaco hook from @monaco-editor/react, or we can just define themes on mount and switch them.
+    // Let's rely on the editor instance to update options, but themes are global.
+    // Better approach: Import useMonaco.
+  }, [theme, editor]);
+
+  // Actually, let's use the 'active' prop of <Editor> or useMonaco hook.
+  // Let's assume we need to import useMonaco.
+
   const handleEditorDidMount: OnMount = (editorInstance, monaco) => {
     setEditor(editorInstance);
+
+    // Define all themes
     monaco.editor.defineTheme('vercel-dark', {
       base: 'vs-dark',
       inherit: true,
@@ -214,12 +236,49 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
         'editorLineNumber.foreground': '#444444',
       }
     });
-    monaco.editor.setTheme('vercel-dark');
+
+    monaco.editor.defineTheme('dracula', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#282a36',
+        'editor.foreground': '#f8f8f2',
+        'editor.lineHighlightBorder': '#44475a',
+        'editorLineNumber.foreground': '#6272a4',
+      }
+    });
+
+    monaco.editor.defineTheme('github-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#ffffff',
+        'editor.foreground': '#24292f',
+        'editor.lineHighlightBorder': '#eaeef2',
+        'editorLineNumber.foreground': '#6e7781',
+      }
+    });
+
+    // Set initial
+    monaco.editor.setTheme(theme);
   };
 
-  const handleCreateFile = () => {
-    if (!newFileName.trim()) return;
-    const extension = newFileName.split('.').pop() || 'txt';
+  // Effect to switch theme dynamically
+  const monaco = useMonaco();
+  useEffect(() => {
+    if (monaco) {
+      monaco.editor.setTheme(theme);
+    }
+  }, [theme, monaco]);
+
+  const handleCreateFile = (name?: string) => {
+    // Determine name: arg OR state (for backward compatibility if needed, though FileExplorer handles it)
+    const nameToUse = name || newFileName;
+
+    if (!nameToUse.trim()) return;
+    const extension = nameToUse.split('.').pop() || 'txt';
     const languageMap: Record<string, string> = {
       ts: 'typescript',
       tsx: 'typescript',
@@ -232,7 +291,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
 
     const newFile: File = {
       id: Date.now().toString(),
-      name: newFileName,
+      name: nameToUse, // This now supports paths like "folder/file.ts"
       language: languageMap[extension] || 'plaintext',
       content: '// New file\n'
     };
@@ -354,62 +413,13 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
         </div>
 
         <div className="p-2 flex-1 overflow-y-auto">
-          <div className="flex items-center justify-between text-[10px] font-bold text-secondary uppercase tracking-wider mb-2 px-2 mt-4">
-            <span>Explorer</span>
-            <button
-              onClick={() => setIsCreatingFile(true)}
-              className="hover:text-white transition-colors"
-              title="New File"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-
-          <div className="space-y-0.5">
-            {files.map(file => (
-              <div
-                key={file.id}
-                onClick={() => handleOpenFile(file.id)}
-                className={`group w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-all duration-200 cursor-pointer ${activeFileId === file.id
-                  ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border border-transparent'
-                  }`}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <FileIcon size={14} className={activeFileId === file.id ? 'text-blue-400' : 'text-gray-500'} />
-                  <span className="truncate">{file.name}</span>
-                </div>
-                <button
-                  onClick={(e) => handleDeleteFile(e, file.id)}
-                  className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity p-1"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            ))}
-
-            {isCreatingFile && (
-              <div className="px-3 py-2 bg-[#111] rounded-md flex items-center gap-2">
-                <FileIcon size={14} className="text-gray-500" />
-                <input
-                  autoFocus
-                  type="text"
-                  value={newFileName}
-                  onChange={(e) => setNewFileName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreateFile();
-                    if (e.key === 'Escape') setIsCreatingFile(false);
-                  }}
-                  placeholder="filename.ts"
-                  className="bg-transparent border-none outline-none text-sm text-white w-full placeholder-gray-600"
-                />
-                <div className="flex items-center gap-1">
-                  <button onClick={handleCreateFile} className="text-green-500 hover:text-green-400"><Check size={12} /></button>
-                  <button onClick={() => setIsCreatingFile(false)} className="text-red-500 hover:text-red-400"><X size={12} /></button>
-                </div>
-              </div>
-            )}
-          </div>
+          <FileExplorer
+            files={files}
+            activeFileId={activeFileId}
+            onOpenFile={handleOpenFile}
+            onDeleteFile={handleDeleteFile}
+            onCreateFile={handleCreateFile}
+          />
 
           <div className="mt-8 border-t border-[#333] pt-4">
             <div className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-2 px-2">Collaborators</div>
@@ -476,7 +486,17 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
             >
               <MessageSquare size={16} />
             </button>
-            <button className="p-2 text-secondary hover:text-white hover:bg-[#222] rounded">
+            <button
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              className={`p-2 rounded transition-colors relative ${isChatOpen ? 'bg-primary text-background' : 'text-secondary hover:text-primary hover:bg-surface'}`}
+            >
+              <MessageSquare size={16} />
+            </button>
+
+            <div className="h-4 w-[1px] bg-border mx-1"></div>
+            <ThemeSwitcher />
+
+            <button className="p-2 text-secondary hover:text-primary hover:bg-surface rounded">
               <Settings size={16} />
             </button>
           </div>

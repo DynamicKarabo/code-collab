@@ -3,15 +3,44 @@
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+  /* Default (Vercel Dark) */
+  --color-background: #0a0a0a;
+  --color-surface: #111111;
+  --color-border: #333333;
+  --color-text-primary: #ededed;
+  --color-text-secondary: #888888;
+  --color-accent: #0070f3;
+}
+
+/* Dracula Theme */
+.theme-dracula {
+  --color-background: #282a36;
+  --color-surface: #44475a;
+  --color-border: #6272a4;
+  --color-text-primary: #f8f8f2;
+  --color-text-secondary: #bd93f9;
+  --color-accent: #ff79c6;
+}
+
+/* GitHub Light Theme */
+.theme-github-light {
+  --color-background: #ffffff;
+  --color-surface: #f6f8fa;
+  --color-border: #d0d7de;
+  --color-text-primary: #24292f;
+  --color-text-secondary: #57606a;
+  --color-accent: #0969da;
 }
 
 body {
   margin: 0;
   width: 100vw;
   height: 100vh;
-  background-color: #0a0a0a;
-  color: #ededed;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
   overflow: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {

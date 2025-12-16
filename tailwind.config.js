@@ -8,12 +8,12 @@ export default {
     theme: {
         extend: {
             colors: {
-                background: '#0a0a0a',
-                surface: '#111111',
-                border: '#333333',
-                primary: '#ffffff',
-                secondary: '#888888',
-                accent: '#0070f3',
+                background: 'var(--color-background)',
+                surface: 'var(--color-surface)',
+                border: 'var(--color-border)',
+                primary: 'var(--color-text-primary)',
+                secondary: 'var(--color-text-secondary)',
+                accent: 'var(--color-accent)',
             },
             fontFamily: {
                 mono: ['"Fira Code"', 'monospace'],

@@ -4,7 +4,7 @@
     "description": "Collaboration server for CodeCollab",
     "main": "index.js",
     "scripts": {
-        "start": "y-websocket"
+        "start": "HOST=0.0.0.0 y-websocket"
     },
     "keywords": [
         "yjs",

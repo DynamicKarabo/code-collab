@@ -8,56 +8,54 @@ interface ChatPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onAction: (action: AIAction) => void;
+  pendingMessage?: string | null;
+  onClearPendingMessage?: () => void;
 }
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClose, onAction }) => {
+export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClose, onAction, pendingMessage, onClearPendingMessage }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // ... state ...
 
-  // Reset messages when opening if empty, or just init once
+  // Handle pending message (e.g., "Fix this error...")
   useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([{
-        id: 'welcome',
-        role: 'ai',
-        content: activeFile
-          ? 'Hi! I\'m your CodeCollab AI partner. I see you\'re working on ' + activeFile.name + '. How can I help?'
-          : 'Hi! I\'m your CodeCollab AI partner. Ask me anything about coding!',
-        timestamp: new Date(),
-      }]);
+    if (isOpen && pendingMessage && !isTyping) {
+      setInput(pendingMessage);
+      // We can either auto-submit or just populate. Let's auto-submit for "magic" feel.
+      // Waiting a tick to ensure state is ready if needed, or just call logic.
+      // Actually, we can reuse logic if we extract handleSubmit, but for now let's just populate and user clicks send?
+      // User request "Fix This" button usually implies auto-action. 
+      // Let's modify handleSubmit to take an optional override, or just set input and simulate click?
+      // Better: trigger submission programmatically.
     }
-  }, [activeFile?.name]); // Depend on file name change to welcome? Maybe just initial.
+  }, [isOpen, pendingMessage]);
 
-  // ... (rest of state)
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [isThinkingMode, setIsThinkingMode] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Actually, cleaner way:
+  // We need to trigger submission. Let's extract core submit logic or use a ref to trigger.
+  // Or just simply:
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isOpen]);
+    if (isOpen && pendingMessage && onClearPendingMessage) {
+      // Trigger submit
+      handleProgrammaticSubmit(pendingMessage);
+      onClearPendingMessage();
+    }
+  }, [isOpen, pendingMessage]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isTyping) return;
-
+  const handleProgrammaticSubmit = (msg: string) => {
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: msg,
       timestamp: new Date()
     };
-
     setMessages(prev => [...prev, userMsg]);
-    setInput('');
     setIsTyping(true);
 
+    processAIResponse(msg);
+  };
+
+  // Refactor handleSubmit to use common logic
+  const processAIResponse = async (userText: string) => {
     const aiMsgId = (Date.now() + 1).toString();
-    // Add placeholder AI message
     setMessages(prev => [...prev, {
       id: aiMsgId,
       role: 'ai',
@@ -68,7 +66,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
 
     try {
       const stream = streamCodeAssistant(
-        userMsg.content,
+        userText,
         {
           currentFile: activeFile?.name || 'CodeCollab Workspace',
           fileContent: activeFile?.content || '// No active file selected'
@@ -77,11 +75,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
       );
 
       let fullText = '';
-
       for await (const chunk of stream) {
         fullText += chunk;
-
-        // Basic JSON detection for "action" response
         if (fullText.trim().startsWith('{') && fullText.trim().endsWith('}')) {
           try {
             const parsed = JSON.parse(fullText);
@@ -94,31 +89,66 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
               ));
               return;
             }
-          } catch (e) {
-            // Continue streaming if JSON is incomplete
-          }
+          } catch (e) { }
         }
-
-        setMessages(prev => prev.map(m =>
-          m.id === aiMsgId ? { ...m, content: fullText } : m
-        ));
+        setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, content: fullText } : m));
       }
-
-      setMessages(prev => prev.map(m =>
-        m.id === aiMsgId ? { ...m, isStreaming: false } : m
-      ));
-
+      setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, isStreaming: false } : m));
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: 'system',
-        content: 'Failed to generate response.',
-        timestamp: new Date()
-      }]);
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'system', content: 'Failed to generate response.', timestamp: new Date() }]);
     } finally {
       setIsTyping(false);
     }
+  };
+
+
+  // ... existing Reset messages effect ...
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([{
+        id: 'welcome',
+        role: 'ai',
+        content: activeFile
+          ? 'Hi! I\'m your CodeCollab AI partner. I see you\'re working on ' + activeFile.name + '. How can I help?'
+          : 'Hi! I\'m your CodeCollab AI partner. Ask me anything about coding!',
+        timestamp: new Date(),
+      }]);
+    }
+  }, [activeFile?.name]);
+
+  // ... existing state ...
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isThinkingMode, setIsThinkingMode] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // ... scrollToBottom ...
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isOpen]);
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isTyping) return;
+
+    // Add user message
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      timestamp: new Date()
+    }]);
+
+    const textToSend = input;
+    setInput('');
+    setIsTyping(true);
+
+    await processAIResponse(textToSend);
   };
 
   if (!isOpen) return null;

@@ -11,7 +11,7 @@ import { INITIAL_FILES, MOCK_USERS } from '../constants';
 import { File, User, AIAction } from '../types';
 import { db } from '../services/db';
 import { ChatPanel } from './ChatPanel';
-import { TerminalPanel } from './TerminalPanel';
+import { TerminalPanel, EditorMarker } from './TerminalPanel';
 import { CursorOverlay } from './CursorOverlay';
 import { Logo } from './Logo';
 
@@ -59,6 +59,10 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [newFileName, setNewFileName] = useState('');
 
+  // Error Fixing State
+  const [markers, setMarkers] = useState<EditorMarker[]>([]);
+  const [pendingAiMessage, setPendingAiMessage] = useState<string | null>(null);
+
   // Share State
   const [hasCopied, setHasCopied] = useState(false);
 
@@ -66,6 +70,13 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
     navigator.clipboard.writeText(window.location.href);
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
+  };
+
+  const handleFixError = (marker: EditorMarker) => {
+    // Open Chat
+    setIsChatOpen(true);
+    // Set prompt
+    setPendingAiMessage(`I found an error in ${activeFile?.name} at line ${marker.startLineNumber}: "${marker.message}". Can you fix it?`);
   };
 
   // Editor Reference
@@ -520,6 +531,22 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
                 theme="vercel-dark"
                 onChange={handleEditorChange}
                 onMount={handleEditorDidMount}
+                onValidate={(userMarkers) => {
+                  // Filter for errors only, or keep warnings too? Let's keep severe ones.
+                  // Map Monaco markers to our interface
+                  const editorMarkers: EditorMarker[] = userMarkers
+                    .filter(m => m.severity > 1) // Info=1, Warning=2, Error=8, etc. Monaco enums are numbers
+                    // Actually Monaco MarkerSeverity: Hint=1, Info=2, Warning=4, Error=8
+                    // Let's take Warning(4) and Error(8) -> > 2
+                    .map(m => ({
+                      originalData: m,
+                      message: m.message,
+                      startLineNumber: m.startLineNumber,
+                      startColumn: m.startColumn,
+                      severity: m.severity
+                    }));
+                  setMarkers(editorMarkers);
+                }}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,
@@ -582,10 +609,9 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
                     id: crypto.randomUUID(),
                     name: action.fileName,
                     language: action.fileName.endsWith('.ts') || action.fileName.endsWith('.tsx') ? 'typescript' : 'javascript', // simple inference
-                    content: action.content,
-                    roomId
+                    content: action.content
                   };
-                  await db.saveFile(process.env.NEXT_PUBLIC_SUPABASE_URL ? roomId : 'demo', newFile);
+                  await db.saveFile(newFile, process.env.NEXT_PUBLIC_SUPABASE_URL ? roomId : 'demo');
                   // Optimistic update
                   setFiles(prev => [...prev, newFile]);
                   setActiveFileId(newFile.id);
@@ -597,18 +623,24 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
                 if (targetFile) {
                   const updatedFile = { ...targetFile, content: action.content };
                   // Update DB
-                  await db.saveFile(process.env.NEXT_PUBLIC_SUPABASE_URL ? roomId : 'demo', updatedFile);
+                  await db.saveFile(updatedFile, process.env.NEXT_PUBLIC_SUPABASE_URL ? roomId : 'demo');
                   // Update State
                   setFiles(prev => prev.map(f => f.id === targetFile.id ? updatedFile : f));
                 }
               }
             }}
+            pendingMessage={pendingAiMessage}
+            onClearPendingMessage={() => setPendingAiMessage(null)}
           />
         </div>
 
         {/* Terminal Area */}
         <div className="h-48 border-t border-[#333]">
-          <TerminalPanel onTerminalReady={(term) => { terminalRef.current = term; }} />
+          <TerminalPanel
+            onTerminalReady={(term) => { terminalRef.current = term; }}
+            markers={markers}
+            onFixError={handleFixError}
+          />
         </div>
       </div>
     </div>

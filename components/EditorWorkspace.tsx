@@ -17,6 +17,7 @@ import { CursorOverlay } from './CursorOverlay';
 import { Logo } from './Logo';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { FileExplorer } from './FileExplorer';
+import { VoiceChat } from './VoiceChat';
 
 interface EditorWorkspaceProps {
   roomId: string;
@@ -422,6 +423,15 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
           />
 
           <div className="mt-8 border-t border-[#333] pt-4">
+            <div className="mb-4 px-2">
+              <div className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-2">Voice Chat</div>
+              <VoiceChat
+                provider={providerRef.current}
+                currentUser={currentUser}
+                users={users}
+              />
+            </div>
+
             <div className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-2 px-2">Collaborators</div>
             <div className="space-y-2 px-2">
               {users.map(user => (

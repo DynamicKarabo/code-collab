@@ -14,6 +14,10 @@ export interface User {
     lineNumber: number;
     column: number;
   };
+  mouse?: {
+    x: number;
+    y: number;
+  };
 }
 
 export interface ChatMessage {

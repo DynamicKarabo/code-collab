@@ -258,8 +258,28 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
     editor?.trigger('toolbar', 'redo', null);
   };
 
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!providerRef.current) return;
+
+    // Throttle updates to ~50ms
+    const now = Date.now();
+    if (now - (window as any).lastMouseMoveTime < 50) return;
+    (window as any).lastMouseMoveTime = now;
+
+    const awareness = providerRef.current.awareness;
+    const { clientX, clientY } = e;
+
+    awareness.setLocalStateField('user', {
+      ...awareness.getLocalState().user,
+      mouse: { x: clientX, y: clientY }
+    });
+  };
+
   return (
-    <div className="flex h-screen w-screen bg-black text-white overflow-hidden relative">
+    <div
+      className="flex h-screen w-screen bg-black text-white overflow-hidden relative"
+      onMouseMove={handleMouseMove}
+    >
       <CursorOverlay users={users} />
 
       {/* Sidebar */}

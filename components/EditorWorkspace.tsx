@@ -81,6 +81,20 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
       // console.log(event.status);
     });
 
+    // Listen for awareness changes to update the users list
+    awareness.on('change', () => {
+      const states = awareness.getStates();
+      const activeUsers = Array.from(states.values())
+        .map((state: any) => state.user)
+        .filter((user: User) => user && user.name) as User[];
+
+      // Use map to ensure unique users by ID if needed, or just set
+      // For now, simple set
+      if (activeUsers.length > 0) {
+        setUsers(activeUsers);
+      }
+    });
+
     return () => {
       provider.disconnect();
       doc.destroy();

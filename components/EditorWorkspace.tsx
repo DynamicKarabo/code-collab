@@ -309,7 +309,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
       <CursorOverlay users={users} />
 
       {/* Sidebar */}
-      <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 bg-black border-r border-[#333] transition-all duration-300 flex flex-col overflow-hidden`}>
+      <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 bg-black/95 backdrop-blur-xl border-r border-white/5 transition-all duration-300 flex flex-col overflow-hidden z-20`}>
         <div className="h-12 flex items-center px-4 border-b border-[#333] gap-2">
           <button onClick={onLeave} className="text-secondary hover:text-white transition-colors">
             <ArrowLeft size={16} />
@@ -334,9 +334,9 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
               <div
                 key={file.id}
                 onClick={() => setActiveFileId(file.id)}
-                className={`group w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors cursor-pointer ${activeFileId === file.id
-                  ? 'bg-white/10 text-white'
-                  : 'text-secondary hover:bg-[#111] hover:text-white'
+                className={`group w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-all duration-200 cursor-pointer ${activeFileId === file.id
+                  ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border border-transparent'
                   }`}
               >
                 <div className="flex items-center gap-2 truncate">
@@ -395,7 +395,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#0a0a0a]">
         {/* Top Navigation */}
-        <div className="h-12 bg-black border-b border-[#333] flex items-center justify-between px-4">
+        <div className="h-14 bg-black/80 backdrop-blur-sm border-b border-white/5 flex items-center justify-between px-4 z-10">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-secondary hover:text-white transition-colors">
               <Menu size={18} />

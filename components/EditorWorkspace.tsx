@@ -34,6 +34,15 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [newFileName, setNewFileName] = useState('');
 
+  // Share State
+  const [hasCopied, setHasCopied] = useState(false);
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setHasCopied(true);
+    setTimeout(() => setHasCopied(false), 2000);
+  };
+
   // Editor Reference
   const [editor, setEditor] = useState<any>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
@@ -355,8 +364,15 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
             >
               <Play size={12} fill="currentColor" /> Run
             </button>
-            <button className="bg-[#222] text-white hover:bg-[#333] border border-[#333] px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 transition-colors">
-              <Share2 size={12} /> Share
+            <button
+              onClick={handleShare}
+              className={`border border-[#333] px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 transition-colors ${hasCopied
+                ? 'bg-green-500/10 text-green-500 border-green-500/50'
+                : 'bg-[#222] text-white hover:bg-[#333]'
+                }`}
+            >
+              {hasCopied ? <Check size={12} /> : <Share2 size={12} />}
+              {hasCopied ? 'Copied!' : 'Share'}
             </button>
             <button
               onClick={() => setIsChatOpen(!isChatOpen)}

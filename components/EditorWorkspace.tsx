@@ -57,7 +57,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
     const doc = new Y.Doc();
     docRef.current = doc;
 
-    const provider = new WebsocketProvider('ws://localhost:1234', roomId, doc);
+    const websocketUrl = import.meta.env.VITE_WEBSOCKET_URL || 'ws://localhost:1234';
+    const provider = new WebsocketProvider(websocketUrl, roomId, doc);
     providerRef.current = provider;
 
     const awareness = provider.awareness;
@@ -415,13 +416,11 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
             )}
           </div>
 
-          {activeFile && (
-            <ChatPanel
-              activeFile={activeFile}
-              isOpen={isChatOpen}
-              onClose={() => setIsChatOpen(false)}
-            />
-          )}
+          <ChatPanel
+            activeFile={activeFile}
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+          />
         </div>
 
         {/* Terminal Area */}

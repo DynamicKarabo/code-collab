@@ -4,20 +4,29 @@ import { ChatMessage, File } from '../types';
 import { streamCodeAssistant } from '../services/geminiService';
 
 interface ChatPanelProps {
-  activeFile: File;
+  activeFile: File | undefined | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClose }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'ai',
-      content: 'Hi! I\'m your CodeCollab AI partner. I see you\'re working on ' + activeFile.name + '. How can I help?',
-      timestamp: new Date(),
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  // Reset messages when opening if empty, or just init once
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([{
+        id: 'welcome',
+        role: 'ai',
+        content: activeFile
+          ? 'Hi! I\'m your CodeCollab AI partner. I see you\'re working on ' + activeFile.name + '. How can I help?'
+          : 'Hi! I\'m your CodeCollab AI partner. Ask me anything about coding!',
+        timestamp: new Date(),
+      }]);
     }
-  ]);
+  }, [activeFile?.name]); // Depend on file name change to welcome? Maybe just initial.
+
+  // ... (rest of state)
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isThinkingMode, setIsThinkingMode] = useState(false);
@@ -58,24 +67,24 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
 
     try {
       const stream = streamCodeAssistant(
-        userMsg.content, 
+        userMsg.content,
         {
-          currentFile: activeFile.name,
-          fileContent: activeFile.content
+          currentFile: activeFile?.name || 'CodeCollab Workspace',
+          fileContent: activeFile?.content || '// No active file selected'
         },
         isThinkingMode
       );
 
       let fullText = '';
-      
+
       for await (const chunk of stream) {
         fullText += chunk;
-        setMessages(prev => prev.map(m => 
+        setMessages(prev => prev.map(m =>
           m.id === aiMsgId ? { ...m, content: fullText } : m
         ));
       }
-      
-      setMessages(prev => prev.map(m => 
+
+      setMessages(prev => prev.map(m =>
         m.id === aiMsgId ? { ...m, isStreaming: false } : m
       ));
 
@@ -106,17 +115,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
           {/* Thinking Mode Toggle */}
           <button
             onClick={() => setIsThinkingMode(!isThinkingMode)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
-              isThinkingMode 
-                ? 'bg-purple-500/10 border-purple-500 text-purple-400' 
-                : 'bg-[#222] border-[#333] text-gray-500 hover:text-gray-300'
-            }`}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${isThinkingMode
+              ? 'bg-purple-500/10 border-purple-500 text-purple-400'
+              : 'bg-[#222] border-[#333] text-gray-500 hover:text-gray-300'
+              }`}
             title={isThinkingMode ? "Deep Reasoning (Gemini 3 Pro)" : "Fast Response (Flash Lite)"}
           >
             {isThinkingMode ? <Sparkles size={10} /> : <Zap size={10} />}
             {isThinkingMode ? 'Thinking' : 'Fast'}
           </button>
-          
+
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors ml-2">
             <X size={18} />
           </button>
@@ -127,20 +135,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-              msg.role === 'ai' ? 'bg-blue-600' : msg.role === 'system' ? 'bg-red-500' : 'bg-gray-700'
-            }`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'ai' ? 'bg-blue-600' : msg.role === 'system' ? 'bg-red-500' : 'bg-gray-700'
+              }`}>
               {msg.role === 'ai' ? <Bot size={16} /> : <UserIcon size={16} />}
             </div>
-            <div className={`flex-1 p-3 rounded-lg text-sm leading-relaxed ${
-              msg.role === 'user' 
-                ? 'bg-blue-600/20 border border-blue-500/30 text-blue-50' 
-                : 'bg-[#1a1a1a] border border-[#333] text-gray-300'
-            }`}>
-               <div className="whitespace-pre-wrap font-mono text-xs md:text-sm">
-                  {msg.content}
-               </div>
-               {msg.isStreaming && <span className="inline-block w-2 h-4 ml-1 bg-blue-400 animate-pulse" />}
+            <div className={`flex-1 p-3 rounded-lg text-sm leading-relaxed ${msg.role === 'user'
+              ? 'bg-blue-600/20 border border-blue-500/30 text-blue-50'
+              : 'bg-[#1a1a1a] border border-[#333] text-gray-300'
+              }`}>
+              <div className="whitespace-pre-wrap font-mono text-xs md:text-sm">
+                {msg.content}
+              </div>
+              {msg.isStreaming && <span className="inline-block w-2 h-4 ml-1 bg-blue-400 animate-pulse" />}
             </div>
           </div>
         ))}
@@ -158,7 +164,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
             className="w-full bg-[#111] text-gray-200 rounded-md py-3 pl-4 pr-12 text-sm border border-[#333] focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all placeholder-gray-600"
             disabled={isTyping}
           />
-          <button 
+          <button
             type="submit"
             disabled={!input.trim() || isTyping}
             className="absolute right-2 top-2 p-1.5 text-white hover:bg-white/10 rounded-md disabled:opacity-50 transition-colors"

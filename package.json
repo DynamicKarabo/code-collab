@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.33.0",
+    "@google/generative-ai": "^0.24.1",
     "@monaco-editor/react": "^4.7.0",
     "@supabase/supabase-js": "^2.87.1",
     "@webcontainer/api": "^1.6.1",

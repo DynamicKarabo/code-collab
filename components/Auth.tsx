@@ -52,7 +52,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
         <div className="flex flex-col items-center">
-          <Logo className="w-16 h-16 mb-4" />
+          <span className="font-bold text-4xl tracking-tight mb-6">codecollab</span>
           <h2 className="text-3xl font-bold tracking-tight">
             {mode === 'signin' ? 'Welcome back' : 'Create an account'}
           </h2>
@@ -122,8 +122,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             }}
             className="font-medium text-gray-400 hover:text-white transition-colors"
           >
-            {mode === 'signin' 
-              ? "Don't have an account? Sign up" 
+            {mode === 'signin'
+              ? "Don't have an account? Sign up"
               : "Already have an account? Sign in"}
           </button>
         </div>

@@ -1,8 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
+/// <reference types="vite/client" />
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize the API client
 const apiKey = import.meta.env.VITE_GOOGLE_API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+const genAI = new GoogleGenerativeAI(apiKey);
 
 interface ChatContext {
   currentFile: string;
@@ -38,30 +39,30 @@ export const streamCodeAssistant = async function* (
 
   try {
     // Select model based on mode
-    // Fast mode: gemini-2.5-flash-lite for low latency
-    // Thinking mode: gemini-3-pro-preview for complex reasoning
-    const modelName = useThinkingMode ? 'gemini-3-pro-preview' : 'gemini-2.5-flash-lite';
+    // Fast mode: gemini-flash-latest (Stable channel)
+    // Thinking mode: gemini-pro-latest (High intelligence channel)
+    // NOTE: Using generic aliases to avoid version-specific quota limits (limit: 0) on newer preview models.
+    const modelName = useThinkingMode ? 'gemini-pro-latest' : 'gemini-flash-latest';
 
-    const config: any = {
-      systemInstruction,
-      temperature: 0.7,
-    };
-
-    // Apply Thinking Config if enabled (Required for Gemini 3 Pro reasoning)
-    if (useThinkingMode) {
-      config.thinkingConfig = { thinkingBudget: 32768 }; // Max budget for deep thought
-    }
-
-    const chat = ai.chats.create({
+    const model = genAI.getGenerativeModel({
       model: modelName,
-      config: config,
+      systemInstruction: systemInstruction,
     });
 
-    const result = await chat.sendMessageStream({ message: prompt });
+    const chat = model.startChat({
+      history: [],
+      generationConfig: {
+        maxOutputTokens: 8192,
+        temperature: 0.7,
+      },
+    });
 
-    for await (const chunk of result) {
-      if (chunk.text) {
-        yield chunk.text;
+    const result = await chat.sendMessageStream(prompt);
+
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      if (chunkText) {
+        yield chunkText;
       }
     }
   } catch (error: any) {

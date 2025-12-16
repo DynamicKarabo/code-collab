@@ -44,4 +44,10 @@ export enum ViewMode {
 export interface AIResponse {
   text: string;
   codeSnippet?: string;
+  action?: AIAction;
 }
+
+export type AIAction =
+  | { type: 'create_file'; fileName: string; content: string }
+  | { type: 'edit_code'; fileName: string; content: string }
+  | { type: 'chat'; message: string };

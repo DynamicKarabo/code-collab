@@ -450,8 +450,9 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
         <div className="flex-1 relative flex overflow-hidden">
           <div className="flex-1 h-full relative">
             {loading ? (
-              <div className="h-full flex items-center justify-center text-secondary">
-                <Loader2 className="animate-spin mr-2" /> Loading workspace...
+              <div className="h-full flex flex-col items-center justify-center text-secondary bg-[#0a0a0a]">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
+                <span className="text-sm font-medium animate-pulse">Initializing workspace...</span>
               </div>
             ) : activeFile ? (
               <Editor
@@ -478,15 +479,36 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
                 }}
               />
             ) : (
-              <div className="h-full flex items-center justify-center text-secondary">
-                <div className="text-center">
-                  <p className="mb-2">No file selected</p>
-                  <button
-                    onClick={() => setIsCreatingFile(true)}
-                    className="text-sm text-blue-400 hover:text-blue-300"
-                  >
-                    Create a file
-                  </button>
+              <div className="h-full flex flex-col items-center justify-center text-secondary bg-[#0a0a0a] relative overflow-hidden select-none">
+                {/* Background Decoration */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+                <div className="relative z-10 flex flex-col items-center max-w-sm text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 shadow-inner">
+                    <Code className="w-8 h-8 text-gray-500" />
+                  </div>
+
+                  <h3 className="text-xl font-medium text-white mb-2">No file open</h3>
+                  <p className="text-gray-500 text-sm mb-8">
+                    Select a file from the sidebar to start editing, or create a new one to begin your project.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3 w-full">
+                    <button
+                      onClick={() => setIsCreatingFile(true)}
+                      className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all group"
+                    >
+                      <Plus className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-medium text-gray-300">New File</span>
+                    </button>
+                    <button
+                      onClick={() => setIsSidebarOpen(true)}
+                      className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all group"
+                    >
+                      <Menu className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-medium text-gray-300">Browse</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

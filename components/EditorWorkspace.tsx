@@ -61,6 +61,32 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   // Replace chatOpen with isChatOpen
 
 
+
+  useEffect(() => {
+    const initFiles = async () => {
+      try {
+        setLoading(true);
+        // Ensure room exists and has files, or create defaults
+        await db.initializeRoomFiles(roomId, INITIAL_FILES);
+
+        // Fetch files
+        const roomFiles = await db.getRoomFiles(roomId);
+        if (roomFiles.length > 0) {
+          setFiles(roomFiles);
+          setActiveFileId(roomFiles[0].id);
+        } else {
+          // Fallback if DB issues, preventing infinite load
+          setFiles([]);
+        }
+      } catch (error) {
+        console.error("Failed to load files:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    initFiles();
+  }, [roomId]);
+
   useEffect(() => {
     // Initialize Yjs
     const doc = new Y.Doc();

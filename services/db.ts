@@ -46,6 +46,22 @@ export const db = {
         return data;
     },
 
+    async deleteRoom(roomId: string): Promise<boolean> {
+        // Delete files first (though cascade might handle it, let's be safe)
+        await supabase.from('files').delete().eq('room_id', roomId);
+
+        const { error } = await supabase
+            .from('rooms')
+            .delete()
+            .eq('id', roomId);
+
+        if (error) {
+            console.error('Error deleting room:', error);
+            return false;
+        }
+        return true;
+    },
+
     // Files
     async getRoomFiles(roomId: string): Promise<File[]> {
         const { data, error } = await supabase

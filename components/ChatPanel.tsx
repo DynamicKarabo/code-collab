@@ -1,15 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User as UserIcon, Loader2, X, Sparkles, Zap } from 'lucide-react';
-import { ChatMessage, File } from '../types';
+import { ChatMessage, File, AIAction } from '../types';
 import { streamCodeAssistant } from '../services/geminiService';
 
 interface ChatPanelProps {
   activeFile: File | undefined | null;
   isOpen: boolean;
   onClose: () => void;
+  onAction: (action: AIAction) => void;
 }
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClose }) => {
+export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClose, onAction }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   // Reset messages when opening if empty, or just init once
@@ -79,6 +80,25 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ activeFile, isOpen, onClos
 
       for await (const chunk of stream) {
         fullText += chunk;
+
+        // Basic JSON detection for "action" response
+        if (fullText.trim().startsWith('{') && fullText.trim().endsWith('}')) {
+          try {
+            const parsed = JSON.parse(fullText);
+            if (parsed.action) {
+              onAction(parsed.action);
+              setMessages(prev => prev.map(msg =>
+                msg.id === aiMsgId
+                  ? { ...msg, content: `⚡ Executing: ${parsed.action.type}...`, isStreaming: false }
+                  : msg
+              ));
+              return;
+            }
+          } catch (e) {
+            // Continue streaming if JSON is incomplete
+          }
+        }
+
         setMessages(prev => prev.map(m =>
           m.id === aiMsgId ? { ...m, content: fullText } : m
         ));

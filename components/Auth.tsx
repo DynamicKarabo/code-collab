@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
-import { Loader2, AlertCircle, ArrowRight } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowRight, Github } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Logo } from './Logo';
 
 interface AuthProps {
   onLogin: (session: any) => void;
@@ -62,12 +63,11 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         className="w-full max-w-md relative z-10"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center mb-4 shadow-[0_0_40px_-10px_rgba(59,130,246,0.3)]">
-            <img src="https://i.postimg.cc/FFpw39rP/codecollab-(1)-(1).jpg" alt="Logo" className="w-8 h-8 object-contain" />
+          <div className="mb-6 scale-125">
+            <Logo className="w-8 h-8" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent">
-            codecollab
-          </h1>
+          {/* Logo component already contains the text "codecollab" */}
+          {/* <h1 ... > ... </h1> - Removing this as Logo has the text */}
           <p className="text-gray-400 text-center">
             {mode === 'signin' ? 'Welcome back. Ready to code?' : 'Create your account and start building.'}
           </p>
@@ -130,6 +130,24 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 </>
               )}
             </button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-[#09090b] text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200"
+            >
+              <Github size={18} />
+              <span>GitHub</span>
+            </button>
           </form>
         </div>
 
@@ -146,7 +164,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
               : "Already have an account? Sign in"}
           </button>
         </div>
-      </motion.div>
-    </div>
+      </motion.div >
+    </div >
   );
 };

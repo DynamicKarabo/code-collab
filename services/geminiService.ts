@@ -30,23 +30,35 @@ export const streamCodeAssistant = async function* (
   ${context.fileContent}
   \`\`\`
   
-  YOUR ROLE:
-  - Analyze the provided code context.
-  - Answer the user's questions specifically about this code or general programming concepts.
-  - If asked to write code, provide clean, production-ready TypeScript/React code.
-  - Keep responses concise and actionable.
+  YOUR ABILITIES:
+  1.  **Chat**: Answer questions about the code.
+  2.  **Create File**: You can create new files if asked.
+  3.  **Edit File**: You can rewrite the entire file content if asked to refactor or fix it.
+
+  RESPONSE FORMAT:
+  You must check if the user is asking for an action.
+  
+  IF ASKING TO CREATE A FILE:
+  Output ONLY this JSON (no markdown, no extra text):
+  { "action": { "type": "create_file", "fileName": "name.ts", "content": "FILE_CONTENT" } }
+
+  IF ASKING TO EDIT/REFACTOR THE CURRENT FILE:
+  Output ONLY this JSON (no markdown, no extra text):
+  { "action": { "type": "edit_code", "fileName": "${context.currentFile}", "content": "NEW_FULL_FILE_CONTENT" } }
+
+  IF JUST CHATTING:
+  Just reply normally with text. Do NOT output formatted JSON for normal chat.
   `;
 
   try {
-    // Select model based on mode
-    // Fast mode: gemini-flash-latest (Stable channel)
-    // Thinking mode: gemini-pro-latest (High intelligence channel)
-    // NOTE: Using generic aliases to avoid version-specific quota limits (limit: 0) on newer preview models.
     const modelName = useThinkingMode ? 'gemini-pro-latest' : 'gemini-flash-latest';
 
     const model = genAI.getGenerativeModel({
       model: modelName,
       systemInstruction: systemInstruction,
+      generationConfig: {
+        responseMimeType: "text/plain", // Keep text/plain to allow mixed chat/JSON if needed, though we instruct strictness
+      }
     });
 
     const chat = model.startChat({

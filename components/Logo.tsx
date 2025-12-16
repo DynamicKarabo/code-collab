@@ -2,11 +2,11 @@ import React from 'react';
 
 export const Logo: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
   <div className="flex items-center gap-2 group cursor-default">
-    <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 border border-white/10 overflow-hidden transition-colors group-hover:bg-white/10">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-white/10 overflow-hidden transition-all duration-500 group-hover:border-blue-500/30 group-hover:shadow-[0_0_15px_-3px_rgba(59,130,246,0.3)]">
+      <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors duration-500" />
       <img
-        src="https://i.postimg.cc/FFpw39rP/codecollab-(1)-(1).jpg"
-        alt="CodeCollab"
+        src="/logo.png"
+        alt="C"
         className={`${className} object-contain relative z-10`}
       />
     </div>

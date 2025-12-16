@@ -8,7 +8,7 @@ import { WebContainer } from '@webcontainer/api';
 import { Terminal } from 'xterm';
 import randomColor from 'randomcolor';
 import { INITIAL_FILES, MOCK_USERS } from '../constants';
-import { File, User } from '../types';
+import { File, User, AIAction } from '../types';
 import { db } from '../services/db';
 import { ChatPanel } from './ChatPanel';
 import { TerminalPanel } from './TerminalPanel';
@@ -25,8 +25,33 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   // ... inside EditorWorkspace ...
   const [files, setFiles] = useState<File[]>([]);
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
+  const [openFileIds, setOpenFileIds] = useState<string[]>([]); // New: Track open tabs
   const [users, setUsers] = useState<User[]>([currentUser]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Helper to handle opening a file (adds to tabs if needed)
+  const handleOpenFile = (fileId: string) => {
+    if (!openFileIds.includes(fileId)) {
+      setOpenFileIds(prev => [...prev, fileId]);
+    }
+    setActiveFileId(fileId);
+  };
+
+  // Helper to close a tab
+  const handleCloseTab = (e: React.MouseEvent, fileId: string) => {
+    e.stopPropagation();
+    const newOpenFiles = openFileIds.filter(id => id !== fileId);
+    setOpenFileIds(newOpenFiles);
+
+    // If we closed the active file, switch to the last one or nothing
+    if (activeFileId === fileId) {
+      if (newOpenFiles.length > 0) {
+        setActiveFileId(newOpenFiles[newOpenFiles.length - 1]);
+      } else {
+        setActiveFileId(null);
+      }
+    }
+  };
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -333,7 +358,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
             {files.map(file => (
               <div
                 key={file.id}
-                onClick={() => setActiveFileId(file.id)}
+                onClick={() => handleOpenFile(file.id)}
                 className={`group w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-all duration-200 cursor-pointer ${activeFileId === file.id
                   ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
                   : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border border-transparent'
@@ -447,7 +472,39 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
         </div>
 
         {/* Editor Area */}
-        <div className="flex-1 relative flex overflow-hidden">
+        <div className="flex-1 relative flex flex-col overflow-hidden">
+
+          {/* Tab Bar */}
+          {openFileIds.length > 0 && (
+            <div className="flex items-center bg-[#0a0a0a] border-b border-white/5 overflow-x-auto min-h-[36px] scrollbar-hide">
+              {openFileIds.map(id => {
+                const file = files.find(f => f.id === id);
+                if (!file) return null;
+                const isActive = activeFileId === id;
+
+                return (
+                  <div
+                    key={id}
+                    onClick={() => setActiveFileId(id)}
+                    className={`
+                                group flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-r border-white/5 cursor-pointer min-w-[120px] max-w-[200px] select-none transition-colors
+                                ${isActive ? 'bg-[#151515] text-blue-400 border-t-2 border-t-blue-500/50' : 'text-gray-500 hover:bg-[#111] hover:text-gray-300 border-t-2 border-t-transparent'}
+                            `}
+                  >
+                    <FileIcon size={12} className={isActive ? "text-blue-400" : "text-gray-600"} />
+                    <span className="truncate flex-1">{file.name}</span>
+                    <button
+                      onClick={(e) => handleCloseTab(e, id)}
+                      className={`p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all ${isActive ? 'text-blue-400' : 'text-gray-500'}`}
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div className="flex-1 h-full relative">
             {loading ? (
               <div className="h-full flex flex-col items-center justify-center text-secondary bg-[#0a0a0a]">
@@ -518,6 +575,34 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
             activeFile={activeFile}
             isOpen={isChatOpen}
             onClose={() => setIsChatOpen(false)}
+            onAction={async (action) => {
+              if (action.type === 'create_file') {
+                try {
+                  const newFile: File = {
+                    id: crypto.randomUUID(),
+                    name: action.fileName,
+                    language: action.fileName.endsWith('.ts') || action.fileName.endsWith('.tsx') ? 'typescript' : 'javascript', // simple inference
+                    content: action.content,
+                    roomId
+                  };
+                  await db.saveFile(process.env.NEXT_PUBLIC_SUPABASE_URL ? roomId : 'demo', newFile);
+                  // Optimistic update
+                  setFiles(prev => [...prev, newFile]);
+                  setActiveFileId(newFile.id);
+                } catch (e) {
+                  console.error("AI Create File Error: ", e);
+                }
+              } else if (action.type === 'edit_code') {
+                const targetFile = files.find(f => f.name === action.fileName);
+                if (targetFile) {
+                  const updatedFile = { ...targetFile, content: action.content };
+                  // Update DB
+                  await db.saveFile(process.env.NEXT_PUBLIC_SUPABASE_URL ? roomId : 'demo', updatedFile);
+                  // Update State
+                  setFiles(prev => prev.map(f => f.id === targetFile.id ? updatedFile : f));
+                }
+              }
+            }}
           />
         </div>
 

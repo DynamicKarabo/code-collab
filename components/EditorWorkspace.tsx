@@ -112,19 +112,25 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
     const awareness = provider.awareness;
     const color = randomColor();
     awareness.setLocalStateField('user', {
+      id: currentUser.id,
       name: currentUser.name,
+      email: currentUser.email,
       color: color
     });
 
     awareness.on('change', () => {
       const states = awareness.getStates();
-      const activeUsers = Array.from(states.values())
-        .map((state: any) => state.user)
-        .filter((user: User) => user && user.name) as User[];
+      const activeUsersMap = new Map<string, User>();
 
-      // Dedup by name for now if needed, or just use what we get
-      // Adding ID check if possible, but user obj might not have ID in awareness unless we put it there
-      // We'll trust the list.
+      Array.from(states.values()).forEach((state: any) => {
+        if (state.user && state.user.name) {
+          // Use email as key for deduplication if available, otherwise name
+          const key = state.user.email || state.user.name;
+          activeUsersMap.set(key, state.user);
+        }
+      });
+
+      const activeUsers = Array.from(activeUsersMap.values());
       if (activeUsers.length > 0) setUsers(activeUsers);
     });
 

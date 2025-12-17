@@ -61,6 +61,19 @@ export const db = {
         return true;
     },
 
+    async deleteFile(fileId: string): Promise<boolean> {
+        const { error } = await supabase
+            .from('files')
+            .delete()
+            .eq('id', fileId);
+
+        if (error) {
+            console.error('Error deleting file:', error);
+            return false;
+        }
+        return true;
+    },
+
     // Files
     async getRoomFiles(roomId: string): Promise<File[]> {
         const { data, error } = await supabase

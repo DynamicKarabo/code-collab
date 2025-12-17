@@ -11,7 +11,7 @@ import randomColor from 'randomcolor';
 import { INITIAL_FILES } from '../constants';
 import { File, User, AIAction } from '../types';
 import { db } from '../services/db';
-import { ChatPanel } from './ChatPanel';
+// import { ChatPanel } from './ChatPanel';
 import { TeamChat } from './TeamChat';
 import { SettingsDialog, EditorSettings } from './SettingsDialog';
 import { TerminalPanel, EditorMarker } from './TerminalPanel';
@@ -34,7 +34,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   const [users, setUsers] = useState<User[]>([currentUser]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  // const [isChatOpen, setIsChatOpen] = useState(false);
   const [isTeamChatOpen, setIsTeamChatOpen] = useState(false);
 
   // Settings State
@@ -64,7 +64,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   const [newFileName, setNewFileName] = useState('');
 
   const [markers, setMarkers] = useState<EditorMarker[]>([]);
-  const [pendingAiMessage, setPendingAiMessage] = useState<string | null>(null);
+  // const [pendingAiMessage, setPendingAiMessage] = useState<string | null>(null);
   const [hasCopied, setHasCopied] = useState(false);
 
   // Refs
@@ -300,9 +300,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   };
 
   const handleFixError = (marker: EditorMarker) => {
-    setIsChatOpen(true);
-    setIsTeamChatOpen(false);
-    setPendingAiMessage(`Fix error in ${activeFile?.name}:${marker.startLineNumber}: ${marker.message}`);
+    // AI Fix removed
+    console.log("Fix error functionality removed");
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -366,8 +365,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
             <button onClick={handleRunCode} className="bg-white text-black hover:bg-gray-200 px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5"><Play size={12} fill="currentColor" /> Run</button>
             <button onClick={handleShare} className={`border border-[#333] px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 ${hasCopied ? 'text-green-500 border-green-500/50' : 'text-white'}`}>{hasCopied ? <Check size={12} /> : <Share2 size={12} />} {hasCopied ? 'Copied' : 'Share'}</button>
             <div className="h-4 w-[1px] bg-border mx-1"></div>
-            <button onClick={() => { setIsTeamChatOpen(!isTeamChatOpen); setIsChatOpen(false); }} className={`p-2 rounded ${isTeamChatOpen ? 'bg-green-600 text-white' : 'text-secondary hover:bg-[#222]'}`}><MessageCircle size={18} /></button>
-            <button onClick={() => { setIsChatOpen(!isChatOpen); setIsTeamChatOpen(false); }} className={`p-2 rounded ${isChatOpen ? 'bg-blue-600 text-white' : 'text-secondary hover:bg-[#222]'}`}><Bot size={18} /></button>
+            <button onClick={() => { setIsTeamChatOpen(!isTeamChatOpen); }} className={`p-2 rounded ${isTeamChatOpen ? 'bg-green-600 text-white' : 'text-secondary hover:bg-[#222]'}`}><MessageCircle size={18} /></button>
+            {/* <button onClick={() => { setIsChatOpen(!isChatOpen); setIsTeamChatOpen(false); }} className={`p-2 rounded ${isChatOpen ? 'bg-blue-600 text-white' : 'text-secondary hover:bg-[#222]'}`}><Bot size={18} /></button> */}
             <div className="h-4 w-[1px] bg-border mx-1"></div>
             <ThemeSwitcher />
             <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-secondary hover:text-primary rounded"><Settings size={16} /></button>
@@ -431,37 +430,10 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
             </div>
           </div>
 
-          <ChatPanel
-            activeFile={activeFile}
-            isOpen={isChatOpen}
-            onClose={() => setIsChatOpen(false)}
-            onAction={async (action) => {
-              if (action.type === 'create_file') {
-                await handleCreateFile(action.fileName);
-                // Content update logic might be needed if handleCreateFile doesn't take content arg, 
-                // but simplified here. Realistically AIAction usually implies content.
-                // Ideally we'd update the file content immediately.
-                // Let's assume handleCreateFile creates empty, then we update.
-                const f = files.find(file => file.name === action.fileName); // might not be found immediately if state async
-                if (f) {
-                  // actually handleCreateFile is async but state update is react-batched.
-                  // For now assuming creation is enough or user takes over.
-                }
-              } else if (action.type === 'edit_code') {
-                // Edit logic
-                const f = files.find(file => file.name === action.fileName);
-                if (f) {
-                  const newF = { ...f, content: action.content };
-                  setFiles(prev => prev.map(file => file.id === f.id ? newF : file));
-                  db.saveFile(newF, roomId);
-                }
-              }
-            }}
-            pendingMessage={pendingAiMessage}
-            onClearPendingMessage={() => setPendingAiMessage(null)}
-          />
-
+          {/* ChatPanel removed */}
           <TeamChat roomId={roomId} currentUser={currentUser} isOpen={isTeamChatOpen} onClose={() => setIsTeamChatOpen(false)} />
+
+
         </div>
 
         <SettingsDialog

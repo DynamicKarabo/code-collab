@@ -11,18 +11,11 @@ export default defineConfig(({ mode }) => {
       headers: {
         'Cross-Origin-Embedder-Policy': 'require-corp',
         'Cross-Origin-Opener-Policy': 'same-origin',
-      },
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3001',
-          changeOrigin: true,
-          secure: false,
-        }
       }
     },
     plugins: [react()],
     define: {
-      // API Key is now handled by the backend server
+      // API Key handling removed
     },
     resolve: {
       alias: {

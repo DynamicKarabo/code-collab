@@ -119,20 +119,46 @@ export const db = {
         }
     },
 
-    async initializeRoomFiles(roomId: string, initialFiles: Omit<File, 'id'>[]) {
-        // Only insert if room has no files
-        const currentFiles = await this.getRoomFiles(roomId);
-        if (currentFiles.length === 0) {
-            for (const file of initialFiles) {
-                await supabase.from('files').insert({
-                    room_id: roomId,
-                    name: file.name,
-                    language: file.language,
-                    content: file.content
-                });
+    async initializeRoomFiles(roomId: string, files: File[]): Promise<void> {
+        const existing = await this.getRoomFiles(roomId);
+        if (existing.length === 0) {
+            for (const file of files) {
+                await this.saveFile(file, roomId);
             }
-            return true;
         }
-        return false;
+    },
+
+    // Profiles
+    async getProfile(userId: string): Promise<{ name: string; color: string } | null> {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('display_name, avatar_color')
+            .eq('id', userId)
+            .single();
+
+        if (error) return null;
+
+        return {
+            name: data.display_name,
+            color: data.avatar_color
+        };
+    },
+
+    async updateProfile(userId: string, updates: { name?: string; color?: string }): Promise<boolean> {
+        // Upsert profile
+        const { error } = await supabase
+            .from('profiles')
+            .upsert({
+                id: userId,
+                display_name: updates.name,
+                avatar_color: updates.color,
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) {
+            console.error('Error updating profile:', error);
+            return false;
+        }
+        return true;
     }
 };

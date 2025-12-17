@@ -39,6 +39,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
     const handleSaveProfile = () => {
         onUpdateUser({ name: tempName, color: tempColor });
+        onClose();
     };
 
     if (!isOpen) return null;

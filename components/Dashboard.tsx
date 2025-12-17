@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, LogOut, Code2, Clock, File as FileIcon, Search, Loader2, Github, Download, X, Trash2 } from 'lucide-react';
+import { Plus, LogOut, Code2, Clock, File as FileIcon, Search, Loader2, Github, Download, X, Trash2, Settings as SettingsIcon } from 'lucide-react';
 import { db } from '../services/db';
 import { githubService } from '../services/github.ts';
 import { Room, User } from '../types';
@@ -7,6 +7,7 @@ import { Logo } from './Logo';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
 import randomColor from 'randomcolor';
+import { SettingsDialog, EditorSettings } from './SettingsDialog';
 
 interface DashboardProps {
   user: User;
@@ -17,6 +18,48 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ user, onJoinRoom, onLogout }) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [profile, setProfile] = useState<{ name: string; color: string }>({
+    name: user.name,
+    color: user.color
+  });
+
+  // Load profile on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      const p = await db.getProfile(user.id);
+      if (p) {
+        setProfile(p);
+      }
+    };
+    loadProfile();
+  }, [user.id]);
+
+  const handleUpdateProfile = async (updates: Partial<User>) => {
+    const newProfile = { name: updates.name || profile.name, color: updates.color || profile.color };
+    setProfile(newProfile);
+    await db.updateProfile(user.id, newProfile);
+  };
+
+  // ...
+
+  // Update Header to include Settings Icon
+  // <div className="flex items-center gap-4">
+  //   <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-gray-400 hover:text-white transition-colors">
+  //     <SettingsIcon size={20} />
+  //   </button>
+  //   <div className="flex items-center gap-3"> ... </div>
+  // </div>
+
+  // Add SettingsDialog at the end
+  // <SettingsDialog 
+  //   isOpen={isSettingsOpen} 
+  //   onClose={() => setIsSettingsOpen(false)} 
+  //   currentUser={{ ...user, ...profile }} 
+  //   onUpdateUser={handleUpdateProfile} 
+  //   editorSettings={{ fontSize: 14, wordWrap: 'on', minimap: false }} 
+  //   onUpdateEditorSettings={() => {}} 
+  // />
 
   // Create Room State
   const [isCreating, setIsCreating] = useState(false);
@@ -377,6 +420,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onJoinRoom, onLogout
           </motion.div>
         )}
       </main>
+
+      <SettingsDialog
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentUser={{ ...user, ...profile }}
+        onUpdateUser={handleUpdateProfile}
+        editorSettings={{ fontSize: 14, wordWrap: 'on', minimap: false }}
+        onUpdateEditorSettings={() => { }}
+      />
     </div>
   );
 };
+

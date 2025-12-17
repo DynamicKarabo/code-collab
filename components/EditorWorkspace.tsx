@@ -110,12 +110,18 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
     providerRef.current = provider;
 
     const awareness = provider.awareness;
-    const color = randomColor();
-    awareness.setLocalStateField('user', {
-      id: currentUser.id,
-      name: currentUser.name,
-      email: currentUser.email,
-      color: color
+
+    // Load Profile and Set Awareness
+    db.getProfile(currentUser.id).then(profile => {
+      const color = profile?.color || randomColor();
+      const name = profile?.name || currentUser.name;
+
+      awareness.setLocalStateField('user', {
+        id: currentUser.id,
+        name: name,
+        email: currentUser.email,
+        color: color
+      });
     });
 
     awareness.on('change', () => {

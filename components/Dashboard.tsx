@@ -268,30 +268,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onJoinRoom, onLogout
       </AnimatePresence>
 
       {/* Navbar */}
-      <nav className="relative z-10 border-b border-white/5 bg-black/50 backdrop-blur-xl h-16 flex items-center justify-between px-6 sticky top-0">
-        <div className="flex items-center gap-3">
-          <Logo />
-        </div>
+      <motion.nav
+        variants={item}
+        className="flex items-center justify-between p-6 mb-8 bg-[#0a0a0a]/50 backdrop-blur-xl border-b border-white/5"
+      >
+        <Logo />
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-black"
-              style={{ backgroundColor: user.color || '#3b82f6' }}
-            >
-              {user.name[0]?.toUpperCase()}
-            </div>
-            <span className="text-sm text-gray-300 font-medium pr-1">{user.name}</span>
-          </div>
           <button
-            onClick={onLogout}
-            className="p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/5 rounded-full"
-            title="Sign Out"
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-white/5"
+            title="Settings"
           >
-            <LogOut size={18} />
+            <SettingsIcon size={20} />
           </button>
+          <div className="flex items-center gap-3">
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-medium text-white">{user.name}</p>
+              <p className="text-xs text-gray-400">Online</p>
+            </div>
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium border-2 border-[#0a0a0a]"
+              style={{ backgroundColor: user.color }}
+            >
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <button
+              onClick={onLogout}
+              className="p-2 text-gray-400 hover:text-white transition-colors"
+              title="Sign out"
+            >
+              <LogOut size={20} />
+            </button>
+          </div>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Main Content */}
       <main className="relative z-10 p-8 max-w-7xl mx-auto">

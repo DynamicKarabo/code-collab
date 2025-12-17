@@ -26,6 +26,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onJoinRoom, onLogout
   const [isImporting, setIsImporting] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [importError, setImportError] = useState('');
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   useEffect(() => {
     loadRooms();
@@ -54,6 +55,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onJoinRoom, onLogout
       const success = await db.deleteRoom(roomId);
       if (success) {
         await loadRooms();
+        setShowDeleteSuccess(true);
+        setTimeout(() => setShowDeleteSuccess(false), 3000);
       } else {
         console.error("Failed to delete project. Check console for database errors.");
         alert("Failed to delete project. Please check if your account has permission.");
@@ -194,6 +197,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onJoinRoom, onLogout
                 </button>
               </form>
             </motion.div>
+          </motion.div>
+        )}
+
+        {showDeleteSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-6 py-4 bg-[#111] border border-green-500/20 rounded-xl shadow-2xl shadow-green-900/10"
+          >
+            <div className="p-2 bg-green-500/10 rounded-full text-green-400">
+              <Trash2 size={20} />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-white">Project Deleted</h4>
+              <p className="text-xs text-gray-400">The project was successfully removed.</p>
+            </div>
+            <button
+              onClick={() => setShowDeleteSuccess(false)}
+              className="ml-2 text-gray-500 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

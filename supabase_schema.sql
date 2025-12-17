@@ -41,3 +41,16 @@ create policy "Files can be created by authenticated users" on files
 
 create policy "Files can be updated by authenticated users" on files
   for update using (auth.role() = 'authenticated');
+
+-- Policies for Deletion
+create policy "Users can delete their own rooms" on rooms
+  for delete using (auth.uid() = owner_id);
+
+create policy "Users can delete files in their rooms" on files
+  for delete using (
+    exists (
+      select 1 from rooms
+      where rooms.id = files.room_id
+      and rooms.owner_id = auth.uid()
+    )
+  );

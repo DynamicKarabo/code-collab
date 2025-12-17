@@ -55,7 +55,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onJoinRoom, onLogout
       if (success) {
         await loadRooms();
       } else {
-        alert("Failed to delete project");
+        console.error("Failed to delete project. Check console for database errors.");
+        alert("Failed to delete project. Please check if your account has permission.");
       }
     }
   };
@@ -125,7 +126,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onJoinRoom, onLogout
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#030303] text-white relative overflow-hidden selection:bg-blue-500/30">
+    <div className="h-screen w-full bg-[#030303] text-white relative overflow-y-auto overflow-x-hidden selection:bg-blue-500/30">
 
       {/* Background Gradients */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />

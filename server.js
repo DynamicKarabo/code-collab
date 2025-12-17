@@ -12,17 +12,28 @@ app.use(express.json());
 
 const PORT = 3001;
 
+app.get('/', (req, res) => {
+    res.send('CodeCollab AI Server is running. The API endpoint is available at POST /api/chat');
+});
+
+app.get('/api/chat', (req, res) => {
+    res.status(405).json({ error: 'Method Not Allowed', message: 'This endpoint expects a POST request with { prompt, context }.' });
+});
+
 app.post('/api/chat', async (req, res) => {
     try {
+        console.log("Received request:", req.body);
         const { prompt, context, useThinkingMode } = req.body;
         const apiKey = process.env.GOOGLE_API_KEY;
 
+        console.log("API Key loaded:", apiKey ? apiKey.substring(0, 10) + "..." : "NONE");
         if (!apiKey) {
+            console.error("API Key is missing in server process");
             return res.status(500).json({ error: 'Server configuration error: API Key missing' });
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const modelName = useThinkingMode ? 'gemini-pro-latest' : 'gemini-flash-latest';
+        const modelName = useThinkingMode ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
 
         const systemInstruction = `You are an expert Senior React Engineer and AI Pair Programmer named 'CodeCollab AI'.
   
@@ -85,11 +96,18 @@ app.post('/api/chat', async (req, res) => {
         res.end();
 
     } catch (error) {
-        console.error('API Error:', error);
-        res.status(500).json({ error: error.message || 'Internal Server Error' });
+        console.error('API Error Details:', error);
+        let message = 'Internal Server Error';
+        if (error.message.includes('404') || error.message.includes('Not Found')) {
+            message = 'API Key invalid or API not enabled for this key.';
+        } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+            message = 'API Key has restricted access.';
+        }
+        res.status(500).json({ error: message, details: error.toString() });
     }
 });
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`API endpoint: http://localhost:${PORT}/api/chat`);
 });

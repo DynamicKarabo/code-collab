@@ -11,7 +11,7 @@ import randomColor from 'randomcolor';
 import { INITIAL_FILES } from '../constants';
 import { File, User, AIAction } from '../types';
 import { db } from '../services/db';
-// import { ChatPanel } from './ChatPanel';
+import { ChatPanel } from './ChatPanel';
 import { TeamChat } from './TeamChat';
 import { SettingsDialog, EditorSettings } from './SettingsDialog';
 import { TerminalPanel, EditorMarker } from './TerminalPanel';
@@ -34,7 +34,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   const [users, setUsers] = useState<User[]>([currentUser]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isTeamChatOpen, setIsTeamChatOpen] = useState(false);
 
   // Settings State
@@ -64,7 +64,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
   const [newFileName, setNewFileName] = useState('');
 
   const [markers, setMarkers] = useState<EditorMarker[]>([]);
-  // const [pendingAiMessage, setPendingAiMessage] = useState<string | null>(null);
+  const [pendingAiMessage, setPendingAiMessage] = useState<string | null>(null);
   const [hasCopied, setHasCopied] = useState(false);
 
   // Refs
@@ -315,6 +315,28 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
     });
   };
 
+  const handleAIAction = async (action: AIAction) => {
+    if (action.type === 'create_file') {
+      await handleCreateFile(action.fileName);
+      // If content provided, update it
+      if (action.content) {
+        const newFile = files.find(f => f.name === action.fileName);
+        if (newFile) {
+          handleEditorChange(action.content); // This updates active file, might be risky if active file changed. 
+          // Better: update specific file by ID
+          // But create file sets it as active.
+          // Let's assume sync for now.
+          setFiles(prev => prev.map(f => f.id === newFile.id ? { ...f, content: action.content } : f));
+          db.saveFile({ ...newFile, content: action.content }, roomId);
+        }
+      }
+    } else if (action.type === 'edit_code') {
+      if (activeFile) {
+        handleEditorChange(action.content);
+      }
+    }
+  };
+
   const triggerUndo = () => editorRef.current?.trigger('toolbar', 'undo', null);
   const triggerRedo = () => editorRef.current?.trigger('toolbar', 'redo', null);
 
@@ -366,7 +388,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
             <button onClick={handleShare} className={`border border-[#333] px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 ${hasCopied ? 'text-green-500 border-green-500/50' : 'text-white'}`}>{hasCopied ? <Check size={12} /> : <Share2 size={12} />} {hasCopied ? 'Copied' : 'Share'}</button>
             <div className="h-4 w-[1px] bg-border mx-1"></div>
             <button onClick={() => { setIsTeamChatOpen(!isTeamChatOpen); }} className={`p-2 rounded ${isTeamChatOpen ? 'bg-green-600 text-white' : 'text-secondary hover:bg-[#222]'}`}><MessageCircle size={18} /></button>
-            {/* <button onClick={() => { setIsChatOpen(!isChatOpen); setIsTeamChatOpen(false); }} className={`p-2 rounded ${isChatOpen ? 'bg-blue-600 text-white' : 'text-secondary hover:bg-[#222]'}`}><Bot size={18} /></button> */}
+            <button onClick={() => { setIsChatOpen(!isChatOpen); setIsTeamChatOpen(false); }} className={`p-2 rounded ${isChatOpen ? 'bg-blue-600 text-white' : 'text-secondary hover:bg-[#222]'}`}><Bot size={18} /></button>
             <div className="h-4 w-[1px] bg-border mx-1"></div>
             <ThemeSwitcher />
             <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-secondary hover:text-primary rounded"><Settings size={16} /></button>
@@ -430,7 +452,14 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ roomId, curren
             </div>
           </div>
 
-          {/* ChatPanel removed */}
+          <ChatPanel
+            activeFile={activeFile}
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            onAction={handleAIAction}
+            pendingMessage={pendingAiMessage}
+            onClearPendingMessage={() => setPendingAiMessage(null)}
+          />
           <TeamChat roomId={roomId} currentUser={currentUser} isOpen={isTeamChatOpen} onClose={() => setIsTeamChatOpen(false)} />
 
 

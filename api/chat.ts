@@ -11,7 +11,7 @@ export default async function handler(req: Request) {
 
     try {
         const { prompt, context, useThinkingMode } = await req.json();
-        const apiKey = process.env.VITE_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY;
+        const apiKey = process.env.GOOGLE_API_KEY;
 
         if (!apiKey) {
             return new Response(JSON.stringify({ error: 'Server configuration error: API Key missing' }), {

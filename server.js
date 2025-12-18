@@ -99,9 +99,14 @@ app.post('/api/chat', async (req, res) => {
         console.error('API Error Details:', error);
         let message = 'Internal Server Error';
         if (error.message.includes('404') || error.message.includes('Not Found')) {
-            message = 'API Key invalid or API not enabled for this key.';
+            // Check if it's specifically about the API not being enabled
+            if (error.message.includes('User has not enabled') || error.message.includes('API not enabled')) {
+                message = 'CodeCollab Error: The "Google Generative Language API" is not enabled in your Google Cloud Console. Please enable it.';
+            } else {
+                message = 'CodeCollab Error: Model not found. The API Key is likely valid, but the model name might be wrong or not available in your region.';
+            }
         } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
-            message = 'API Key has restricted access.';
+            message = 'CodeCollab Error: API Key is valid but has restricted access (maybe IP mismatch or wrong service scope).';
         }
         res.status(500).json({ error: message, details: error.toString() });
     }

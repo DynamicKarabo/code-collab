@@ -33,7 +33,7 @@ app.post('/api/chat', async (req, res) => {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const modelName = useThinkingMode ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+        const modelName = useThinkingMode ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
 
         const systemInstruction = `You are an expert Senior React Engineer and AI Pair Programmer named 'CodeCollab AI'.
   

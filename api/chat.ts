@@ -21,7 +21,7 @@ export default async function handler(req: Request) {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const modelName = useThinkingMode ? 'gemini-pro-latest' : 'gemini-flash-latest';
+        const modelName = useThinkingMode ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
 
         const systemInstruction = `You are an expert Senior React Engineer and AI Pair Programmer named 'CodeCollab AI'.
   
